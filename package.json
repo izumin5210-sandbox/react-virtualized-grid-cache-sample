@@ -1,18 +1,22 @@
 {
   "name": "react-virtualized-grid-cache-sample",
   "version": "0.1.0",
-  "private": true,
   "dependencies": {
     "react": "^15.5.3",
     "react-dom": "^15.5.3"
   },
   "devDependencies": {
+    "flow-bin": "^0.43.1",
+    "flow-typed": "^2.0.0",
     "react-scripts": "0.9.5"
   },
+  "private": true,
   "scripts": {
-    "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "preinstall": "flow-typed install",
+    "pretest": "yarn run flow",
+    "start": "react-scripts start",
+    "test": "react-scripts test --env=jsdom"
   }
 }
