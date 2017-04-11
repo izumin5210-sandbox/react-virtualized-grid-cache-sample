@@ -82,7 +82,7 @@ class App extends Component<DefaultProps, Props, State> {
     const { filterType, sorted } = this.state;
     await this.updateItems(filterType, sorted);
     if (this.list != null && this.state.clearingCache) {
-      this.list.Grid._cellCache = {};
+      this.list.recomputeRowHeights();
     }
   };
 
