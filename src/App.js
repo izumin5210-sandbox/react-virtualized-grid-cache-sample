@@ -24,6 +24,8 @@ type Props = RequiredProps & DefaultProps;
 type State = {
   filterType: FilterType,
   sorted: boolean,
+  clearingCache: boolean,
+  items: Array<Item>,
 };
 
 const itemCount = 1000;
@@ -69,19 +71,32 @@ class App extends Component<DefaultProps, Props, State> {
     this.state = {
       filterType: 'all',
       sorted: false,
+      clearingCache: false,
+      items: this.props.items,
     };
   }
 
-  getItems() {
-    const { items, filtersByType } = this.props;
+  list: List;
+
+  stateDidUpdate = async () => {
     const { filterType, sorted } = this.state;
+    await this.updateItems(filterType, sorted);
+    if (this.list != null && this.state.clearingCache) {
+      this.list.Grid._cellCache = {};
+    }
+  };
+
+  updateItems(filterType: FilterType, sorted: boolean): Promise<void> {
+    const { items, filtersByType } = this.props;
     let filteredItems = items.filter(filtersByType[filterType]);
 
-    if (!sorted) {
-      return filteredItems;
+    if (sorted) {
+      filteredItems = filteredItems.sort((i1: Props, i2: Props) => i1.id - i2.id);
     }
 
-    return filteredItems.sort((i1: Props, i2: Props) => i1.id - i2.id);
+    return new Promise((resolve) => {
+      this.setState({ items: filteredItems }, resolve);
+    });
   }
 
   renderRadios() {
@@ -92,7 +107,7 @@ class App extends Component<DefaultProps, Props, State> {
           type="radio"
           value={type}
           checked={filterType === type}
-          onChange={(e) => this.setState({ filterType: type })}
+          onChange={(e) => this.setState({ filterType: type }, this.stateDidUpdate)}
         />
         { type }
       </label>
@@ -105,7 +120,7 @@ class App extends Component<DefaultProps, Props, State> {
   }
 
   renderItems() {
-    const items = this.getItems();
+    const items = this.state.items;
 
     return (
       <WindowScroller>
@@ -114,6 +129,7 @@ class App extends Component<DefaultProps, Props, State> {
             {({ width }) => (
               <List
                 {...{ width, height, isScrolling, scrollTop, rowHeight }}
+                ref={(c) => { this.list = c; }}
                 style={itemsStyle}
                 overscanRowCount={10}
                 rowCount={items.length}
@@ -132,7 +148,7 @@ class App extends Component<DefaultProps, Props, State> {
     key,
     style,
   }: any) => {
-    const { id, text } = this.getItems()[index];
+    const { id, text } = this.state.items[index];
     return (
       <div key={id} style={Object.assign({}, itemStyle, style)}>{ text }</div>
     );
@@ -151,10 +167,20 @@ class App extends Component<DefaultProps, Props, State> {
               type="checkbox"
               checked={this.state.sorted}
               onChange={(e) => {
-                this.setState({ sorted: e.target.checked });
+                this.setState({ sorted: e.target.checked }, this.stateDidUpdate);
               }}
             />
             sort
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={this.state.clearingCache}
+              onChange={(e) => {
+                this.setState({ clearingCache: e.target.checked }, this.stateDidUpdate);
+              }}
+            />
+            clear cache
           </label>
           { this.renderRadios() }
           { this.renderItems() }
