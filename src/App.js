@@ -1,5 +1,6 @@
 /* @flow */
 import React, { Component } from 'react';
+import { AutoSizer, List, WindowScroller } from 'react-virtualized';
 import logo from './logo.svg';
 import './App.css';
 
@@ -38,6 +39,20 @@ for(let i = defaultItems.length - 1; i > 0; i--){
     defaultItems[r] = tmp;
 }
 
+const rowHeight = 60;
+
+const itemsStyle = {
+  border: '1px solid #ccc',
+  borderBottom: 'none',
+  borderRadius: 4,
+};
+
+const itemStyle = {
+  boxSizing: 'border-box',
+  lineHeight: `${rowHeight}px`,
+  borderBottom: '1px solid #ccc',
+};
+
 class App extends Component<DefaultProps, Props, State> {
 
   static defaultProps = {
@@ -55,6 +70,18 @@ class App extends Component<DefaultProps, Props, State> {
       filterType: 'all',
       sorted: false,
     };
+  }
+
+  getItems() {
+    const { items, filtersByType } = this.props;
+    const { filterType, sorted } = this.state;
+    let filteredItems = items.filter(filtersByType[filterType]);
+
+    if (!sorted) {
+      return filteredItems;
+    }
+
+    return filteredItems.sort((i1: Props, i2: Props) => i1.id - i2.id);
   }
 
   renderRadios() {
@@ -78,24 +105,38 @@ class App extends Component<DefaultProps, Props, State> {
   }
 
   renderItems() {
-    const { items, filtersByType } = this.props;
-    const { filterType, sorted } = this.state;
-    let filteredItems = items.filter(filtersByType[filterType]);
-
-    if (sorted) {
-      filteredItems = filteredItems.sort((i1: Props, i2: Props) => i1.id - i2.id);
-    }
-
-    const elements = filteredItems.map(({ id, text }) => (
-      <li key={id}>{ text }</li>
-    ));
+    const items = this.getItems();
 
     return (
-      <ul>
-        { elements }
-      </ul>
+      <WindowScroller>
+        {({ height, isScrolling, scrollTop }) => (
+          <AutoSizer disableHeight >
+            {({ width }) => (
+              <List
+                {...{ width, height, isScrolling, scrollTop, rowHeight }}
+                style={itemsStyle}
+                overscanRowCount={10}
+                rowCount={items.length}
+                rowRenderer={this.renderItem}
+                autoHeight
+              />
+            )}
+          </AutoSizer>
+        )}
+      </WindowScroller>
     );
   }
+
+  renderItem = ({
+    index,
+    key,
+    style,
+  }: any) => {
+    const { id, text } = this.getItems()[index];
+    return (
+      <div key={id} style={Object.assign({}, itemStyle, style)}>{ text }</div>
+    );
+  };
 
   render() {
     return (
@@ -104,7 +145,7 @@ class App extends Component<DefaultProps, Props, State> {
           <img src={logo} className="App-logo" alt="logo" />
           <h2>Welcome to React</h2>
         </div>
-        <p className="App-intro">
+        <section className="App-intro">
           <label>
             <input
               type="checkbox"
@@ -117,7 +158,7 @@ class App extends Component<DefaultProps, Props, State> {
           </label>
           { this.renderRadios() }
           { this.renderItems() }
-        </p>
+        </section>
       </div>
     );
   }
